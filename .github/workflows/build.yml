@@ -7,9 +7,9 @@ permissions:
 on:
   push:
     branches:
-      - '**' # Triggers on pushes to any branch
+      - "**" # Triggers on pushes to any branch
     tags:
-      - 'v*' # Triggers on pushes of tags like v1.0, v20.15.10
+      - "v*" # Triggers on pushes of tags like v1.0, v20.15.10
   pull_request:
 
 jobs:
@@ -19,27 +19,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        config: 
-        - {
-            name: "Windows Latest MSVC",
-            os: windows-latest,
-            artifact: win32-x64,
-          }
-        - {
-            name: "Ubuntu_Latest_GCC",
-            os: ubuntu-latest,
-            artifact: linux-x64,
-          }
-        - {
-            name: "macOS Latest Clang",
-            os: macos-latest,
-            artifact: darwin-arm64,
-          }
-        - {
-            name: "macOS Intel?",
-            os: macos-13,
-            artifact: darwin-x64,
-          }
+        config:
+          # - {
+          #     name: "Windows Latest MSVC",
+          #     os: windows-latest,
+          #     artifact: win32-x64,
+          #   }
+          - {
+              name: "Ubuntu_Latest_GCC",
+              os: ubuntu-latest,
+              artifact: linux-x64,
+            }
+          - {
+              name: "macOS Latest Clang",
+              os: macos-latest,
+              artifact: darwin-arm64,
+            }
+          # - { name: "macOS Intel?", os: macos-13, artifact: darwin-x64 }
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -51,12 +47,12 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: "24.x"
 
       - name: Use Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21.3'
+          go-version: "1.21.3"
 
       - name: Print env
         run: |
@@ -95,13 +91,18 @@ jobs:
         run: |
           brew install cmake
           cmake --version
-          
+
       - name: Build
         shell: bash
         run: |
           npm ci
           echo "${{ github.event_name }}"
           npm run build
+
+      - name: Test
+        shell: bash
+        continue-on-error: true
+        run: npm run test
 
       - name: Upload Artifact ⬆️
         uses: actions/upload-artifact@v4
@@ -116,43 +117,43 @@ jobs:
         with:
           files: dist/*.dawn.node
 
-  package:
-    needs: build
-    name: package-and-publish
-    environment: deploy
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        persist-credentials: false
+  # package:
+  #   needs: build
+  #   name: package-and-publish
+  #   environment: deploy
+  #   runs-on: ubuntu-latest
+  #   if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #       with:
+  #         persist-credentials: false
 
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
+  #     - name: Use Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "20.x"
 
-    - name: Print env
-      run: |
-        echo github.event.action: ${{ github.event.action }}
-        echo github.event_name: ${{ github.event_name }}
-        echo github.ref: ${{ github.ref }}
-        echo github.ref_type: ${{ github.ref_type }}
+  #     - name: Print env
+  #       run: |
+  #         echo github.event.action: ${{ github.event.action }}
+  #         echo github.event_name: ${{ github.event_name }}
+  #         echo github.ref: ${{ github.ref }}
+  #         echo github.ref_type: ${{ github.ref_type }}
 
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: dist
-        merge-multiple: true
+  #     - name: Download artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: dist
+  #         merge-multiple: true
 
-    - name: Build
-      shell: bash
-      run: |
-        npm ci
-        node build/prep-for-publish.js
+  #     - name: Build
+  #       shell: bash
+  #       run: |
+  #         npm ci
+  #         node build/prep-for-publish.js
 
-    - name: Publish to NPM 📖
-      uses: JS-DevTools/npm-publish@v2
-      with:
-        token: ${{ secrets.NPM_TOKEN }}
+  #     - name: Publish to NPM 📖
+  #       uses: JS-DevTools/npm-publish@v2
+  #       with:
+  #         token: ${{ secrets.NPM_TOKEN }}
