@@ -78,6 +78,32 @@ async function main() {
     console.log('building for:', target);
     if (!compileOnly) {
       await execute('git', ['submodule', 'update', '--init']);
+      
+      // Patch Dawn DEPS file with Node.js 24 compatible N-API dependencies
+      console.log('Patching Dawn DEPS file for Node.js 24 compatibility...');
+      const dawnDepsPath = path.join(kDawnPath, 'DEPS');
+      try {
+        let depsContent = fs.readFileSync(dawnDepsPath, 'utf8');
+        
+        // Update node-addon-api to v8.5.0 (latest release, supports Node.js 24)
+        depsContent = depsContent.replace(
+          /('third_party\/node-addon-api': \{\s*'url': '[^']*node-addon-api@)[^']+/,
+          '$16babc960154752f686a7dca8e712991a976a754b'
+        );
+        
+        // Update node-api-headers to v1.5.0 (latest release, includes N-API v9 support for Node.js 24)
+        depsContent = depsContent.replace(
+          /('third_party\/node-api-headers': \{\s*'url': '[^']*node-api-headers@)[^']+/,
+          '$1d46edabd5bbacc08393578eb19fc2eba7021b597'
+        );
+        
+        fs.writeFileSync(dawnDepsPath, depsContent);
+        console.log('✅ DEPS file patched with Node.js 24 compatible N-API dependencies');
+      } catch (error) {
+        console.warn('⚠️ Failed to patch DEPS file:', error.message);
+        console.warn('Continuing with original DEPS...');
+      }
+      
       await createProject();
     }
     await compile();
